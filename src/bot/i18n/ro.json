@@ -1,0 +1,34 @@
+{
+  "common": {
+    "no_permission": "Nu ai permisiunea să folosești această comandă.",
+    "error": "A apărut o eroare. Încearcă din nou mai târziu.",
+    "success": "Succes!",
+    "user_not_found": "Utilizatorul nu a fost găsit.",
+    "key_not_found": "Cheia nu a fost găsită."
+  },
+  "whitelist": {
+    "success": "Ai dat whitelist cu succes lui **{user}** pentru **{days}** zile.",
+    "success_lifetime": "Ai dat whitelist cu succes lui **{user}** pe viață.",
+    "already_whitelisted": "**{user}** are deja whitelist.",
+    "usage": "Utilizare: `/whitelist user:@user [days:number]`"
+  },
+  "unwhitelist": {
+    "success": "Ai scos whitelist-ul de la **{user}**.",
+    "not_whitelisted": "**{user}** nu are whitelist."
+  },
+  "mass_whitelist": {
+    "started": "Încep mass whitelist pentru rolul **{role}**...",
+    "finished": "Mass whitelist terminat.\n• Succes: **{success}**\n• Eșuat (există deja): **{failed}**\n• Total procesat: **{total}**"
+  },
+  "resethwid": {
+    "success": "HWID-ul a fost resetat pentru **{user}**.",
+    "no_key": "Acest utilizator nu are nicio cheie atribuită."
+  },
+  "panel": {
+    "title": "Panou de Control Script",
+    "description": "Folosește butoanele de mai jos pentru a-ți gestiona cheia.",
+    "get_script": "Ia Scriptul",
+    "reset_hwid": "Resetează HWID",
+    "redeem": "Activează Cheie"
+  }
+}

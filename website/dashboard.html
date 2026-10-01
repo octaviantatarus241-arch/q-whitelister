@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Q Whitelister</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f0f13;
+      color: #e4e4e7;
+      min-height: 100vh;
+    }
+    header {
+      background: #18181b;
+      border-bottom: 1px solid #27272a;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h1 { font-size: 1.3rem; color: #a78bfa; }
+    .user-info { display: flex; align-items: center; gap: 1rem; }
+    .user-info img { width: 36px; height: 36px; border-radius: 50%; }
+    .btn {
+      background: #7c3aed;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .btn:hover { background: #6d28d9; }
+    .btn-secondary { background: #27272a; }
+    .btn-secondary:hover { background: #3f3f46; }
+    .btn-danger { background: #dc2626; }
+    main { max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; }
+    .section {
+      background: #18181b;
+      border: 1px solid #27272a;
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .section h2 { margin-bottom: 1rem; font-size: 1.2rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+    .card {
+      background: #0f0f13;
+      border: 1px solid #27272a;
+      border-radius: 10px;
+      padding: 1.2rem;
+    }
+    .card h3 { color: #a78bfa; margin-bottom: 0.5rem; }
+    .card p { color: #a1a1aa; font-size: 0.9rem; margin-bottom: 0.8rem; }
+    input, select {
+      background: #0f0f13;
+      border: 1px solid #3f3f46;
+      color: #e4e4e7;
+      padding: 0.6rem 0.9rem;
+      border-radius: 6px;
+      width: 100%;
+      margin-bottom: 0.8rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th, td { padding: 0.7rem; text-align: left; border-bottom: 1px solid #27272a; }
+    th { color: #a1a1aa; font-weight: 500; }
+    .key-code { font-family: monospace; background: #27272a; padding: 0.2rem 0.5rem; border-radius: 4px; }
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green { background: #065f46; color: #6ee7b7; }
+    .badge-red { background: #7f1d1d; color: #fca5a5; }
+    .badge-yellow { background: #78350f; color: #fcd34d; }
+    .hidden { display: none; }
+    .form-row { display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; }
+    .form-row > div { flex: 1; min-width: 140px; }
+    label { display: block; font-size: 0.85rem; color: #a1a1aa; margin-bottom: 0.3rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Q Whitelister</h1>
+    <div class="user-info">
+      <img id="avatar" src="" alt="">
+      <span id="username">Loading...</span>
+      <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Create Project -->
+    <div class="section">
+      <h2>Create Project</h2>
+      <div class="form-row">
+        <div>
+          <label>Project Name</label>
+          <input type="text" id="projectName" placeholder="My Script Hub">
+        </div>
+        <button class="btn" onclick="createProject()">Create</button>
+      </div>
+    </div>
+
+    <!-- Projects List -->
+    <div class="section">
+      <h2>Your Projects</h2>
+      <div class="grid" id="projectsList">
+        <p style="color:#a1a1aa">Loading projects...</p>
+      </div>
+    </div>
+
+    <!-- Keys Section (shown when project selected) -->
+    <div class="section hidden" id="keysSection">
+      <h2>Keys — <span id="selectedProjectName"></span></h2>
+      
+      <div class="form-row" style="margin-bottom: 1.5rem;">
+        <div>
+          <label>How many keys?</label>
+          <input type="number" id="keyCount" value="1" min="1" max="100">
+        </div>
+        <div>
+          <label>Days (empty = lifetime)</label>
+          <input type="number" id="keyDays" placeholder="Lifetime">
+        </div>
+        <button class="btn" onclick="generateKeys()">Generate Keys</button>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Discord ID</th>
+            <th>HWID</th>
+            <th>Expires</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="keysTable"></tbody>
+      </table>
+    </div>
+  </main>
+
+  <script>
+    let currentProjectId = null;
+    let user = null;
+
+    async function loadUser() {
+      const res = await fetch('/api/me', { credentials: 'include' });
+      if (!res.ok) {
+        window.location.href = '/';
+        return;
+      }
+      user = await res.json();
+      document.getElementById('username').textContent = user.username;
+      document.getElementById('avatar').src = `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`;
+    }
+
+    async function loadProjects() {
+      const res = await fetch('/api/projects', { credentials: 'include' });
+      const projects = await res.json();
+      const container = document.getElementById('projectsList');
+      
+      if (!projects.length) {
+        container.innerHTML = '<p style="color:#a1a1aa">No projects yet. Create one above.</p>';
+        return;
+      }
+
+      container.innerHTML = projects.map(p => `
+        <div class="card">
+          <h3>${p.name}</h3>
+          <p>ID: <code>${p._id}</code></p>
+          <p style="font-size:0.8rem;color:#71717a">Script ID: ${p.scriptId}</p>
+          <button class="btn" style="margin-top:0.5rem" onclick="selectProject('${p._id}', '${p.name}')">Manage Keys</button>
+        </div>
+      `).join('');
+    }
+
+    async function createProject() {
+      const name = document.getElementById('projectName').value.trim();
+      if (!name) return alert('Enter a name');
+      
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      
+      if (res.ok) {
+        document.getElementById('projectName').value = '';
+        loadProjects();
+      } else {
+        alert('Failed to create project');
+      }
+    }
+
+    function selectProject(id, name) {
+      currentProjectId = id;
+      document.getElementById('selectedProjectName').textContent = name;
+      document.getElementById('keysSection').classList.remove('hidden');
+      loadKeys();
+    }
+
+    async function loadKeys() {
+      const res = await fetch(`/api/keys/${currentProjectId}`, { credentials: 'include' });
+      const keys = await res.json();
+      const tbody = document.getElementById('keysTable');
+      
+      tbody.innerHTML = keys.map(k => {
+        const expires = k.expiresAt ? new Date(k.expiresAt).toLocaleDateString() : 'Lifetime';
+        const status = k.blacklisted 
+          ? '<span class="badge badge-red">Blacklisted</span>'
+          : (k.expiresAt && new Date(k.expiresAt) < new Date() 
+              ? '<span class="badge badge-yellow">Expired</span>' 
+              : '<span class="badge badge-green">Active</span>');
+        
+        return `
+          <tr>
+            <td><span class="key-code">${k.key}</span></td>
+            <td>${k.discordId || '—'}</td>
+            <td>${k.hwid ? k.hwid.slice(0,12)+'...' : '—'}</td>
+            <td>${expires}</td>
+            <td>${status}</td>
+            <td><button class="btn btn-danger" style="padding:0.3rem 0.6rem;font-size:0.8rem" onclick="deleteKey('${k._id}')">Delete</button></td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="6" style="color:#a1a1aa">No keys yet</td></tr>';
+    }
+
+    async function generateKeys() {
+      const count = parseInt(document.getElementById('keyCount').value) || 1;
+      const days = document.getElementById('keyDays').value ? parseInt(document.getElementById('keyDays').value) : null;
+      
+      const res = await fetch('/api/keys/generate', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId: currentProjectId, count, days })
+      });
+      
+      if (res.ok) {
+        loadKeys();
+      } else {
+        alert('Failed to generate keys');
+      }
+    }
+
+    async function deleteKey(id) {
+      if (!confirm('Delete this key?')) return;
+      await fetch(`/api/keys/${id}`, { method: 'DELETE', credentials: 'include' });
+      loadKeys();
+    }
+
+    // Init
+    loadUser().then(loadProjects);
+  </script>
+</body>
+</html>
